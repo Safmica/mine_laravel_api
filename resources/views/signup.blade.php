@@ -65,7 +65,6 @@ $(document).ready(function () {
             type: 'POST',
             data: formData,
             success: function (response) {
-                $.cookie('auth_token', response.token, { path: '/', expires: 1 });
                 window.location.href = '/login';
             },
             error: function (xhr) {

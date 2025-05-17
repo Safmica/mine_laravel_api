@@ -12,80 +12,86 @@
 </nav>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const userMenu = document.getElementById("user-menu");
+$(document).ready(function() {
+    const userMenu = $('#user-menu');
 
-    userMenu.innerHTML = `
+    userMenu.html(`
         <div class="text-gray-500 px-4 py-2 font-semibold rounded-xl bg-gray-100">
             Loading...
         </div>
-    `;
+    `);
 
-    fetch('/api/me', {
+    $.ajax({
+        url: '/api/me',
         method: 'GET',
-        credentials: 'include'
-    })
-    .then(res => {
-        if (!res.ok) throw new Error("Unauthorized");
-        return res.json();
-    })
-    .then(user => {
-        userMenu.innerHTML = `
-            <div class="relative inline-block text-left user-dropdown">
-                <button 
-                    id="user-dropdown-button"
-                    class="text-black px-4 py-2 font-semibold rounded-xl bg-gray-100 hover:bg-gray-200 transition"
-                >
-                    ${user.name}
-                </button>
-                <div 
-                    id="dropdown-menu"
-                    class="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg z-50"
-                    style="display: none;"
-                >
+        xhrFields: {
+            withCredentials: true
+        },
+        success: function(user) {
+            userMenu.html(`
+                <div class="relative inline-block text-left user-dropdown">
                     <button 
-                        id="logout-btn"
-                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        id="user-dropdown-button"
+                        class="text-black px-4 py-2 font-semibold rounded-xl bg-gray-100 hover:bg-gray-200 transition"
                     >
-                        Logout
+                        ${user.name}
                     </button>
+                    <div 
+                        id="dropdown-menu"
+                        class="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg z-50"
+                        style="display: none;"
+                    >
+                        <button 
+                            id="logout-btn"
+                            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                            Logout
+                        </button>
+                    </div>
                 </div>
-            </div>
-        `;
+            `);
 
-        const dropdownButton = document.getElementById('user-dropdown-button');
-        const dropdownMenu = document.getElementById('dropdown-menu');
-        
-        dropdownButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdownMenu.style.display = dropdownMenu.style.display === 'none' ? 'block' : 'none';
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.user-dropdown')) {
-                dropdownMenu.style.display = 'none';
-            }
-        });
-
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            fetch('/api/logout', {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Accept': 'application/json'
+            $('#user-dropdown-button').on('click', function(e) {
+                e.stopPropagation();
+                const menu = $('#dropdown-menu');
+                if (menu.is(':visible')) {
+                    menu.hide();
+                } else {
+                    menu.show();
                 }
-            }).then(() => {
-                location.reload();
-            }).catch(err => {
-                console.error('Logout failed:', err);
             });
-        });
-    })
-    .catch(() => {
-        userMenu.innerHTML = `
-            <a href="/login" class="text-black px-4 py-2 font-semibold rounded-xl hover:bg-gray-100 transition">Login</a>
-            <a href="/signup" class="text-white px-4 py-2 rounded-xl font-semibold bg-cos-yellow">Sign Up</a>
-        `;
+
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.user-dropdown').length) {
+                    $('#dropdown-menu').hide();
+                }
+            });
+
+            $('#logout-btn').on('click', function() {
+                $.ajax({
+                    url: '/api/logout',
+                    method: 'POST',
+                    xhrFields: {
+                        withCredentials: true
+                    },
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    success: function() {
+                        window.location.href = '/';
+                    },
+                    error: function(err) {
+                        console.error('Logout failed:', err);
+                    }
+                });
+            });
+        },
+        error: function() {
+            userMenu.html(`
+                <a href="/login" class="text-black px-4 py-2 font-semibold rounded-xl hover:bg-gray-100 transition">Login</a>
+                <a href="/signup" class="text-white px-4 py-2 rounded-xl font-semibold bg-cos-yellow">Sign Up</a>
+            `);
+        }
     });
 });
 </script>
