@@ -12,3 +12,7 @@ Route::get('/signup', function () {
     return view('signup');
 });
 ;
+Route::get('/index', function () {
+    return view('index');
+});
+;

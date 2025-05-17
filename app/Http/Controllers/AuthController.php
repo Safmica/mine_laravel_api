@@ -38,21 +38,35 @@ class AuthController extends Controller
         }
 
         $user = User::where('email', $request->email)->first();
+
+        $user->tokens()->delete();
+
         $token = $user->createToken('token')->plainTextToken;
 
+        $cookie = cookie(
+            'auth_token', 
+            $token,     
+            60 * 24 * 1, 
+            null,         
+            null,       
+            true,         
+            true,         
+            false,       
+            'Strict'     
+        );
+
         return response()->json([
-            'token' => $token,
             'user' => $user,
-            'success' => "User Login successfully"
-        ], 200);
+            'success' => "User login successfully",
+        ], 200)->withCookie($cookie);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-
+        $request->user()->tokens()->delete();
         return response()->json(['message' => 'Logged out']);
     }
+
 
     public function me(Request $request)
     {
