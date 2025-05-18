@@ -12,9 +12,28 @@
         <p class="text-gray-600 mb-4">
             Platform manajemen course perkuliahan, upload file, dan catatan pertemuan dengan mudah.
         </p>
-        <a href="/signup" class="inline-block bg-cos-yellow text-white px-6 py-3 rounded-xl font-semibold hover:bg-yellow-500 transition duration-300 transform hover:scale-105">
+        <a id="main-button" href="/signup" class="inline-block bg-cos-yellow text-white px-6 py-3 rounded-xl font-semibold hover:bg-yellow-500 transition duration-300 transform hover:scale-105">
             Daftar Sekarang
         </a>
     </div>
 </div>
+
+<script>
+    $(document).ready(function () {
+        $.ajax({
+            url: '/api/me',
+            method: 'GET',
+            xhrFields: {
+                withCredentials: true
+            },
+            success: function (res) {
+                if (res && res.id) {
+                    $('#main-button')
+                        .attr('href', '/index')
+                        .text('Dashboard');
+                }
+            },
+        });
+    });
+</script>
 @endsection
