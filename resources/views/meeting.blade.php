@@ -18,43 +18,16 @@
         <div class="flex flex-row">
             <x-sidebar />
             <div class="bg-cos-yellow min-h-screen w-full p-6 mx-4 rounded-2xl space-y-6">
-                <div class="text-2xl font-bold" id="user-info">
-                </div>
-                <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="courses-info">
-                </div>
-            </div>
-        </div>
-        <button id="add-course-btn"
-            class="fixed bottom-6 right-6 bg-cos-yellow hover:bg-cos-light-yellow text-white font-bold py-3 px-5 rounded-full shadow-lg text-lg">
-            +
-        </button>
-
-        <div id="add-course-modal"
-            class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                <h2 class="text-xl font-bold mb-4">Tambah Course Baru</h2>
-                <form id="add-course-form" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium">Judul Course</label>
-                        <input type="text" name="title" required class="w-full border p-2 rounded mt-1" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium">Deskripsi</label>
-                        <textarea name="description" required class="w-full border p-2 rounded mt-1"></textarea>
-                    </div>
-                    <div class="flex justify-end space-x-2 pt-4">
-                        <button type="button" id="cancel-add"
-                            class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">Batal</button>
-                        <button type="submit"
-                            class="bg-cos-yellow hover:bg-cos-light-yellow text-white px-4 py-2 rounded">Simpan</button>
-                    </div>
-                </form>
+                <div class="text-2xl font-bold" id="user-info"></div>
+                <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="courses-info"></div>
             </div>
         </div>
     </div>
 
     <script>
         $(document).ready(function() {
+            const pathSegments = window.location.pathname.split('/');
+            const courseId = pathSegments[2];
             $.ajax({
                 url: '/api/me',
                 method: 'GET',
@@ -64,13 +37,33 @@
                 success: function(user) {
                     $('#container').show();
                     $('#user-info').html(`
-                        <h1 class="text-2xl font-bold w-full"> ${user.name} > Courses</h1>
+                        <div class="flex flex-row">
+                            <h1 class="text-2xl font-bold"> ${user.name} > </h1>
+                            <a href="#" class="text-2xl font-boldl"></a>
+                        </div>
                     `);
+                    $.ajax({
+                        url: `/api/courses/${courseId}`,
+                        method: 'GET',
+                        xhrFields: {
+                            withCredentials: true
+                        },
+                        success: function(course) {
+                            $('#user-info a')
+                                .text(course.title + ' >')
+                                .attr('href', `/index`);
+
+                        },
+                        error: function() {
+                            window.location.href = '/';
+                        }
+                    });
                 },
                 error: function() {
                     window.location.href = '/';
                 }
             });
+
             $.ajax({
                 url: '/api/courses',
                 method: 'GET',
@@ -136,11 +129,6 @@
                     }
                 }
             });
-
-            function toggleDropdown(button) {
-                const dropdown = button.nextElementSibling;
-                dropdown.classList.toggle('hidden');
-            }
 
             $(document).on('click', '.dropdown-toggle', function(e) {
                 e.stopPropagation();
@@ -271,7 +259,6 @@
             });
         }
     </script>
-
 </body>
 
 </html>

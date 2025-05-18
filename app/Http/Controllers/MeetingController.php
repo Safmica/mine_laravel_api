@@ -3,63 +3,93 @@
 namespace App\Http\Controllers;
 
 use App\Models\Meeting;
+use App\Models\Course;
 use Illuminate\Http\Request;
 
 class MeetingController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request, $course_id)
     {
-        //
+        $course = Course::find($course_id);
+
+        if (!$course || $course->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Tidak diizinkan melihat data course ini'], 403);
+        }
+
+        $meetings = Meeting::where('course_id', $course_id)->get();
+        return response()->json($meetings);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function show(Request $request, $course_id, $id)
     {
-        //
+        $meeting = Meeting::where('id', $id)
+                          ->where('course_id', $course_id)
+                          ->with('course')
+                          ->first();
+
+        if (!$meeting || $meeting->course->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Meeting tidak ditemukan atau bukan milik Anda'], 403);
+        }
+
+        return response()->json($meeting);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request, $course_id)
     {
-        //
+        $course = Course::find($course_id);
+
+        if (!$course || $course->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Tidak diizinkan menambahkan meeting pada course ini'], 403);
+        }
+
+        $validated = $request->validate([
+            'meeting_name' => 'required|string|max:255',
+            'topic' => 'nullable|string',
+        ]);
+
+        $meeting = Meeting::create([
+            'course_id' => $course_id,
+            'meeting_name' => $validated['meeting_name'],
+            'topic' => $validated['topic'] ?? null,
+        ]);
+
+        return response()->json($meeting, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Meeting $meeting)
+    public function update(Request $request, $course_id, $id)
     {
-        //
+        $meeting = Meeting::where('id', $id)
+                          ->where('course_id', $course_id)
+                          ->with('course')
+                          ->first();
+
+        if (!$meeting || $meeting->course->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Tidak diizinkan'], 403);
+        }
+
+        $validated = $request->validate([
+            'meeting_name' => 'sometimes|required|string|max:255',
+            'topic' => 'nullable|string',
+        ]);
+
+        $meeting->update($validated);
+
+        return response()->json($meeting);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Meeting $meeting)
+    public function destroy(Request $request, $course_id, $id)
     {
-        //
-    }
+        $meeting = Meeting::where('id', $id)
+                          ->where('course_id', $course_id)
+                          ->with('course')
+                          ->first();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Meeting $meeting)
-    {
-        //
-    }
+        if (!$meeting || $meeting->course->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Tidak diizinkan'], 403);
+        }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Meeting $meeting)
-    {
-        //
+        $meeting->delete();
+
+        return response()->json(['message' => 'Meeting berhasil dihapus']);
     }
 }

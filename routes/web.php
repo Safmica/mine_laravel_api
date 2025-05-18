@@ -11,8 +11,11 @@ Route::get('/login', function () {
 Route::get('/signup', function () {
     return view('signup');
 });
-;
+
 Route::get('/index', function () {
     return view('index');
 });
-;
+
+Route::get('/courses/{course_id}/meetings', function () {
+    return view('meeting');
+});
