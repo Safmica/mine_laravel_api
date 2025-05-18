@@ -19,3 +19,7 @@ Route::get('/index', function () {
 Route::get('/courses/{course_id}/meetings', function () {
     return view('meeting');
 });
+
+Route::get('/courses/{course_id}/meetings/{meeting_id}/files', function () {
+    return view('file');
+});

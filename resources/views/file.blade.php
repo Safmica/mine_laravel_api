@@ -18,29 +18,23 @@
         <div class="flex flex-row">
             <x-sidebar />
             <div class="bg-cos-yellow min-h-screen w-full p-6 mx-4 rounded-2xl space-y-6">
-                <div class="text-2xl font-bold" id="user-info">
-                </div>
-                <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="courses-info">
-                </div>
+                <div class="text-2xl font-bold" id="user-info"></div>
+                <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="file-info"></div>
             </div>
         </div>
-        <button id="add-course-btn"
+        <button id="add-file-btn"
             class="fixed bottom-6 right-6 bg-cos-yellow hover:bg-cos-light-yellow text-white font-bold py-3 px-5 rounded-full shadow-lg text-lg">
             +
         </button>
 
-        <div id="add-course-modal"
+        <div id="add-file-modal"
             class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
             <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                <h2 class="text-xl font-bold mb-4">Tambah Course Baru</h2>
-                <form id="add-course-form" class="space-y-4">
+                <h2 class="text-xl font-bold mb-4">Tambah File Baru</h2>
+                <form id="add-file-form" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium">Judul Course</label>
-                        <input type="text" name="title" required class="w-full border p-2 rounded mt-1" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium">Deskripsi</label>
-                        <textarea name="description" required class="w-full border p-2 rounded mt-1"></textarea>
+                        <label class="block text-sm font-medium">File</label>
+                        <input type="file" name="file" required class="w-full border p-2 rounded mt-1" />
                     </div>
                     <div class="flex justify-end space-x-2 pt-4">
                         <button type="button" id="cancel-add"
@@ -54,6 +48,9 @@
     </div>
 
     <script>
+        const pathSegments = window.location.pathname.split('/');
+        const courseId = pathSegments[2];
+        const meetingId = pathSegments[4];
         $(document).ready(function() {
             $.ajax({
                 url: '/api/me',
@@ -64,47 +61,78 @@
                 success: function(user) {
                     $('#container').show();
                     $('#user-info').html(`
-                        <a href="/index" class="text-2xl font-bold w-full"> ${user.name} > Courses</a>
+                        <div class="flex flex-row">
+                            <a href="/index" class="text-2xl font-bold" id="user-nav">${user.name} > </a>
+                            <a href="#" class="text-2xl font-bold" id="coourse-nav"></a>
+                            <a href="#" class="text-2xl font-bold" id="meeting-nav"></a>
+                        </div>
                     `);
+                    $.ajax({
+                        url: `/api/courses/${courseId}`,
+                        method: 'GET',
+                        xhrFields: {
+                            withCredentials: true
+                        },
+                        success: function(course) {
+                            $('#user-info #coourse-nav')
+                                .text(course.title + ' >')
+                                .attr('href', `/courses/${courseId}/meetings`);
+                            $.ajax({
+                                url: `/api/courses/${courseId}/meetings/${meetingId}`,
+                                method: 'GET',
+                                xhrFields: {
+                                    withCredentials: true
+                                },
+                                success: function(meeting) {
+                                    $('#user-info #meeting-nav')
+                                        .text(meeting.meeting_name + ' >')
+                                        .attr('href',
+                                            `/courses/${courseId}/meetings/${meetingId}/files`
+                                            );
+                                },
+                                error: function() {}
+                            });
+                        },
+                        error: function() {
+                            window.location.href = '/';
+                        }
+                    });
                 },
                 error: function() {
                     window.location.href = '/';
                 }
             });
+
             $.ajax({
-                url: '/api/courses',
+                url: `/api/courses/${courseId}/meetings/${meetingId}/files`,
                 method: 'GET',
                 xhrFields: {
                     withCredentials: true
                 },
-                success: function(courses) {
-                    const container = $('#courses-info');
+                success: function(files) {
+                    const container = $('#file-info');
                     container.html('');
 
-                    if (courses.length === 0) {
+                    if (files.length === 0) {
                         container.html(`
                             <div class="flex justify-center items-center h-96 w-full col-span-full pt-10">
-                                <img src="/assets/404_course.png" alt="Logo" class="opacity-20 w-[400px]">
+                                <img src="/assets/404_file.png" alt="Logo" class="opacity-20 w-[400px]">
                             </div>
                         `);
                     } else {
-                        courses.forEach(course => {
+                        files.forEach(file => {
                             container.append(`
                                 <div class="bg-white rounded-lg shadow-lg p-4 flex flex-row items-center h-12">
-                                    <a href="/courses/${course.id}/meetings" class="w-full group cursor-pointer relative">
-                                        <h3 class="text-lg font-semibold text-center mb-2 truncate w-full">${course.title}</h3>
-                                        <span class="absolute top-full left-1/2 transform -translate-x-1/2 mb-2 w-max px-2 py-1 text-sm text-white bg-black rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                            ${course.description}
-                                        </span>
+                                    <a href="/storage/${file.filepath}" class="w-full group cursor-pointer relative">
+                                        <h3 class="text-lg font-semibold text-center mb-2 truncate w-full">${file.filename}</h3>
                                     </a>
-                                    <div id="modal-edit-${course.id}" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+                                    <div id="modal-edit-${file.id}" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
                                         <div class="bg-white p-4 rounded-lg shadow-lg w-[400px]">
-                                            <h2 class="text-lg font-bold mb-2">Edit Course</h2>
-                                            <input type="text" id="edit-title-${course.id}" value="${course.title}" class="border p-2 rounded w-full mb-2" />
-                                            <textarea id="edit-description-${course.id}" class="border p-2 rounded w-full mb-2">${course.description}</textarea>
+                                            <h2 class="text-lg font-bold mb-2">Edit File</h2>
+                                            <input type="text" id="edit-file-name-${file.id}" value="${file.filename}" class="border p-2 rounded w-full mb-2" />
                                             <div class="flex justify-end gap-2">
-                                                <button class="bg-gray-300 text-black px-4 py-2 rounded" onclick="document.getElementById('modal-edit-${course.id}').classList.add('hidden')">Cancel</button>
-                                                <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="updateCourse(${course.id})">Save</button>
+                                                <button class="bg-gray-300 text-black px-4 py-2 rounded" onclick="document.getElementById('modal-edit-${file.id}').classList.add('hidden')">Cancel</button>
+                                                <button class="bg-cos-yellow text-white px-4 py-2 rounded" onclick="updateFile(${file.id})">Save</button>
                                             </div>
                                         </div>
                                     </div>
@@ -117,13 +145,13 @@
                                         <div class="dropdown-menu absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-md hidden z-50">
                                             <ul>
                                                 <li class="hover:bg-gray-100">
-                                                    <button onclick="document.getElementById('modal-edit-${course.id}').classList.remove('hidden')" 
+                                                    <button onclick="document.getElementById('modal-edit-${file.id}').classList.remove('hidden')" 
                                                             class="w-full text-left px-4 py-2 text-black">
                                                         Edit
                                                     </button>
                                                 </li>   
                                                 <li class="hover:bg-gray-100">
-                                                    <button onclick="deleteCourse(${course.id})" class="w-full text-left px-4 py-2 text-red-500">
+                                                    <button onclick="deleteFile(${file.id})" class="w-full text-left px-4 py-2 text-red-500">
                                                         Delete
                                                     </button>
                                                 </li>       
@@ -137,11 +165,6 @@
                 }
             });
 
-            function toggleDropdown(button) {
-                const dropdown = button.nextElementSibling;
-                dropdown.classList.toggle('hidden');
-            }
-
             $(document).on('click', '.dropdown-toggle', function(e) {
                 e.stopPropagation();
                 $('.dropdown-menu').not($(this).next()).addClass('hidden');
@@ -152,34 +175,33 @@
                 $('.dropdown-menu').addClass('hidden');
             });
 
-            $('#add-course-btn').on('click', function() {
-                $('#add-course-modal').removeClass('hidden');
+            $('#add-file-btn').on('click', function() {
+                $('#add-file-modal').removeClass('hidden');
             });
 
             $('#cancel-add').on('click', function() {
-                $('#add-course-modal').addClass('hidden');
+                $('#add-file-modal').addClass('hidden');
             });
 
-            $('#add-course-form').on('submit', function(e) {
+            $('#add-file-form').on('submit', function(e) {
                 e.preventDefault();
 
-                const formData = {
-                    title: $(this).find('input[name="title"]').val(),
-                    description: $(this).find('textarea[name="description"]').val()
-                };
+                const form = $(this)[0];
+                const formData = new FormData(form);
 
                 $.ajax({
-                    url: '/api/courses',
+                    url: `/api/courses/${courseId}/meetings/${meetingId}/files`,
                     method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(formData),
-                    xhrFields: {
-                        withCredentials: true
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function(res) {
                         Swal.fire({
                             title: 'Berhasil!',
-                            text: 'Course berhasil ditambahkan.',
+                            text: 'File berhasil ditambahkan.',
                             icon: 'success',
                             confirmButtonText: 'OK'
                         }).then(() => {
@@ -190,7 +212,7 @@
                         console.error(err);
                         Swal.fire({
                             title: 'Gagal!',
-                            text: 'Terjadi kesalahan saat menambahkan course.',
+                            text: 'Terjadi kesalahan saat menambahkan File.',
                             icon: 'error',
                             confirmButtonText: 'OK'
                         });
@@ -199,26 +221,24 @@
             });
         });
 
-        function updateCourse(id) {
-            const title = $(`#edit-title-${id}`).val();
-            const description = $(`#edit-description-${id}`).val();
+        function updateFile(id) {
+            const filename = $(`#edit-file-name-${id}`).val();
 
             $.ajax({
-                url: `api/courses/${id}`,
+                url: `/api/courses/${courseId}/meetings/${meetingId}/files/${id}`,
                 method: 'PUT',
                 xhrFields: {
                     withCredentials: true
                 },
                 contentType: 'application/json',
                 data: JSON.stringify({
-                    title: title,
-                    description: description
+                    filename: filename,
                 }),
                 success: function() {
                     Swal.fire({
                         icon: 'success',
                         title: 'Updated!',
-                        text: 'Course updated successfully',
+                        text: 'File updated successfully',
                         timer: 1500,
                         showConfirmButton: false
                     }).then(() => location.reload());
@@ -227,13 +247,13 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
-                        text: 'Failed to update course',
+                        text: 'Failed to update file',
                     });
                 }
             });
         }
 
-        function deleteCourse(id) {
+        function deleteFile(id) {
             Swal.fire({
                 title: 'Are you sure?',
                 text: 'This action cannot be undone.',
@@ -245,7 +265,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: `api/courses/${id}`,
+                        url: `/api/courses/${courseId}/meetings/${meetingId}/files/${id}`,
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -254,7 +274,7 @@
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Deleted!',
-                                text: 'Course has been deleted.',
+                                text: 'File has been deleted.',
                                 timer: 1500,
                                 showConfirmButton: false
                             }).then(() => location.reload());
@@ -263,7 +283,7 @@
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Failed!',
-                                text: 'Failed to delete course.',
+                                text: 'Failed to delete file.',
                             });
                         }
                     });
@@ -271,7 +291,6 @@
             });
         }
     </script>
-
 </body>
 
 </html>

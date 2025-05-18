@@ -65,8 +65,8 @@
                     $('#container').show();
                     $('#user-info').html(`
                         <div class="flex flex-row">
-                            <h1 class="text-2xl font-bold"> ${user.name} > </h1>
-                            <a href="#" class="text-2xl font-boldl"></a>
+                            <a href="/index" class="text-2xl font-bold" id="user-nav"> ${user.name} > </a>
+                            <a href="#" class="text-2xl font-bold" id="course-nav"></a>
                         </div>
                     `);
                     $.ajax({
@@ -76,9 +76,9 @@
                             withCredentials: true
                         },
                         success: function(course) {
-                            $('#user-info a')
+                            $('#user-info #course-nav')
                                 .text(course.title + ' >')
-                                .attr('href', `/index`);
+                                .attr('href', `/courses/${course.id}/meetings`);
 
                         },
                         error: function() {
