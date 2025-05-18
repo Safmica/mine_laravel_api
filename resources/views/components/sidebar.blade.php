@@ -28,7 +28,7 @@ $(document).ready(function() {
             courses.forEach(course => {
                 const li = $('<li></li>');
                 const a = $('<a></a>')
-                    .attr('href', `/meetings/course/${course.id}`) 
+                    .attr('href', `/courses/${course.id}/meetings`) 
                     .addClass('block px-3 py-2 rounded-lg text-black font-medium hover:bg-white hover:text-yellow-600 transition duration-200 break-words')
                     .text(course.title);
 

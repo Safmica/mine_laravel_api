@@ -1,7 +1,7 @@
 <nav class="bg-transparent p-4">
     <div class="max-w-7xl mx-auto flex justify-between items-center">
         <div class="text-black text-2xl font-bold">
-            <a href="/" class="flex flex-row items-center space-x-2">
+            <a href="/index" class="flex flex-row items-center space-x-2">
                 <img src="{{ asset('assets/mine_icon.webp') }}" alt="Logo" class="w-10 h-10">
                 <p>MINE</p>
             </a>

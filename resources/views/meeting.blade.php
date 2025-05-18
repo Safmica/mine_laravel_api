@@ -19,15 +19,42 @@
             <x-sidebar />
             <div class="bg-cos-yellow min-h-screen w-full p-6 mx-4 rounded-2xl space-y-6">
                 <div class="text-2xl font-bold" id="user-info"></div>
-                <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="courses-info"></div>
+                <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3" id="meeting-info"></div>
+            </div>
+        </div>
+        <button id="add-meeting-btn"
+            class="fixed bottom-6 right-6 bg-cos-yellow hover:bg-cos-light-yellow text-white font-bold py-3 px-5 rounded-full shadow-lg text-lg">
+            +
+        </button>
+
+        <div id="add-meeting-modal"
+            class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+                <h2 class="text-xl font-bold mb-4">Tambah Meeting Baru</h2>
+                <form id="add-meeting-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium">Meeting Name</label>
+                        <input type="text" name="meeting_name" required class="w-full border p-2 rounded mt-1" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">Topic</label>
+                        <textarea name="topic" required class="w-full border p-2 rounded mt-1"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-2 pt-4">
+                        <button type="button" id="cancel-add"
+                            class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">Batal</button>
+                        <button type="submit"
+                            class="bg-cos-yellow hover:bg-cos-light-yellow text-white px-4 py-2 rounded">Simpan</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
     <script>
+        const pathSegments = window.location.pathname.split('/');
+        const courseId = pathSegments[2];
         $(document).ready(function() {
-            const pathSegments = window.location.pathname.split('/');
-            const courseId = pathSegments[2];
             $.ajax({
                 url: '/api/me',
                 method: 'GET',
@@ -65,39 +92,39 @@
             });
 
             $.ajax({
-                url: '/api/courses',
+                url: `/api/courses/${courseId}/meetings`,
                 method: 'GET',
                 xhrFields: {
                     withCredentials: true
                 },
-                success: function(courses) {
-                    const container = $('#courses-info');
+                success: function(meetings) {
+                    const container = $('#meeting-info');
                     container.html('');
 
-                    if (courses.length === 0) {
+                    if (meetings.length === 0) {
                         container.html(`
                             <div class="flex justify-center items-center h-96 w-full col-span-full pt-10">
-                                <img src="/assets/404_course.png" alt="Logo" class="opacity-20 w-[400px]">
+                                <img src="/assets/404_meeting.png" alt="Logo" class="opacity-20 w-[400px]">
                             </div>
                         `);
                     } else {
-                        courses.forEach(course => {
+                        meetings.forEach(meeting => {
                             container.append(`
                                 <div class="bg-white rounded-lg shadow-lg p-4 flex flex-row items-center h-12">
-                                    <a href="/courses/${course.id}/meetings" class="w-full group cursor-pointer relative">
-                                        <h3 class="text-lg font-semibold text-center mb-2 truncate w-full">${course.title}</h3>
+                                    <a href="/courses/${courseId}/meetings/${meeting.id}/files" class="w-full group cursor-pointer relative">
+                                        <h3 class="text-lg font-semibold text-center mb-2 truncate w-full">${meeting.meeting_name}</h3>
                                         <span class="absolute top-full left-1/2 transform -translate-x-1/2 mb-2 w-max px-2 py-1 text-sm text-white bg-black rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                            ${course.description}
+                                            ${meeting.topic}
                                         </span>
                                     </a>
-                                    <div id="modal-edit-${course.id}" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+                                    <div id="modal-edit-${meeting.id}" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
                                         <div class="bg-white p-4 rounded-lg shadow-lg w-[400px]">
-                                            <h2 class="text-lg font-bold mb-2">Edit Course</h2>
-                                            <input type="text" id="edit-title-${course.id}" value="${course.title}" class="border p-2 rounded w-full mb-2" />
-                                            <textarea id="edit-description-${course.id}" class="border p-2 rounded w-full mb-2">${course.description}</textarea>
+                                            <h2 class="text-lg font-bold mb-2">Edit Meeting</h2>
+                                            <input type="text" id="edit-meeting-name-${meeting.id}" value="${meeting.meeting_name}" class="border p-2 rounded w-full mb-2" />
+                                            <textarea id="edit-topic-${meeting.id}" class="border p-2 rounded w-full mb-2">${meeting.topic}</textarea>
                                             <div class="flex justify-end gap-2">
-                                                <button class="bg-gray-300 text-black px-4 py-2 rounded" onclick="document.getElementById('modal-edit-${course.id}').classList.add('hidden')">Cancel</button>
-                                                <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="updateCourse(${course.id})">Save</button>
+                                                <button class="bg-gray-300 text-black px-4 py-2 rounded" onclick="document.getElementById('modal-edit-${meeting.id}').classList.add('hidden')">Cancel</button>
+                                                <button class="bg-cos-yellow text-white px-4 py-2 rounded" onclick="updateMeeting(${meeting.id})">Save</button>
                                             </div>
                                         </div>
                                     </div>
@@ -110,13 +137,13 @@
                                         <div class="dropdown-menu absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-md hidden z-50">
                                             <ul>
                                                 <li class="hover:bg-gray-100">
-                                                    <button onclick="document.getElementById('modal-edit-${course.id}').classList.remove('hidden')" 
+                                                    <button onclick="document.getElementById('modal-edit-${meeting.id}').classList.remove('hidden')" 
                                                             class="w-full text-left px-4 py-2 text-black">
                                                         Edit
                                                     </button>
                                                 </li>   
                                                 <li class="hover:bg-gray-100">
-                                                    <button onclick="deleteCourse(${course.id})" class="w-full text-left px-4 py-2 text-red-500">
+                                                    <button onclick="deleteMeeting(${meeting.id})" class="w-full text-left px-4 py-2 text-red-500">
                                                         Delete
                                                     </button>
                                                 </li>       
@@ -140,24 +167,24 @@
                 $('.dropdown-menu').addClass('hidden');
             });
 
-            $('#add-course-btn').on('click', function() {
-                $('#add-course-modal').removeClass('hidden');
+            $('#add-meeting-btn').on('click', function() {
+                $('#add-meeting-modal').removeClass('hidden');
             });
 
             $('#cancel-add').on('click', function() {
-                $('#add-course-modal').addClass('hidden');
+                $('#add-meeting-modal').addClass('hidden');
             });
 
-            $('#add-course-form').on('submit', function(e) {
+            $('#add-meeting-form').on('submit', function(e) {
                 e.preventDefault();
 
                 const formData = {
-                    title: $(this).find('input[name="title"]').val(),
-                    description: $(this).find('textarea[name="description"]').val()
+                    meeting_name: $(this).find('input[name="meeting_name"]').val(),
+                    topic: $(this).find('textarea[name="topic"]').val()
                 };
 
                 $.ajax({
-                    url: '/api/courses',
+                    url: `/api/courses/${courseId}/meetings`,
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify(formData),
@@ -167,7 +194,7 @@
                     success: function(res) {
                         Swal.fire({
                             title: 'Berhasil!',
-                            text: 'Course berhasil ditambahkan.',
+                            text: 'Meeting berhasil ditambahkan.',
                             icon: 'success',
                             confirmButtonText: 'OK'
                         }).then(() => {
@@ -178,7 +205,7 @@
                         console.error(err);
                         Swal.fire({
                             title: 'Gagal!',
-                            text: 'Terjadi kesalahan saat menambahkan course.',
+                            text: 'Terjadi kesalahan saat menambahkan meeting.',
                             icon: 'error',
                             confirmButtonText: 'OK'
                         });
@@ -187,26 +214,26 @@
             });
         });
 
-        function updateCourse(id) {
-            const title = $(`#edit-title-${id}`).val();
-            const description = $(`#edit-description-${id}`).val();
+        function updateMeeting(id) {
+            const meeting_name = $(`#edit-meeting-name-${id}`).val();
+            const topic = $(`#edit-topic-${id}`).val();
 
             $.ajax({
-                url: `api/courses/${id}`,
+                url: `/api/courses/${courseId}/meetings/${id}`,
                 method: 'PUT',
                 xhrFields: {
                     withCredentials: true
                 },
                 contentType: 'application/json',
                 data: JSON.stringify({
-                    title: title,
-                    description: description
+                    meeting_name: meeting_name,
+                    topic: topic
                 }),
                 success: function() {
                     Swal.fire({
                         icon: 'success',
                         title: 'Updated!',
-                        text: 'Course updated successfully',
+                        text: 'Meeting updated successfully',
                         timer: 1500,
                         showConfirmButton: false
                     }).then(() => location.reload());
@@ -215,13 +242,13 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
-                        text: 'Failed to update course',
+                        text: 'Failed to update meeting',
                     });
                 }
             });
         }
 
-        function deleteCourse(id) {
+        function deleteMeeting(id) {
             Swal.fire({
                 title: 'Are you sure?',
                 text: 'This action cannot be undone.',
@@ -233,7 +260,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: `api/courses/${id}`,
+                        url: `/api/courses/${courseId}/meetings/${id}`,
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -242,7 +269,7 @@
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Deleted!',
-                                text: 'Course has been deleted.',
+                                text: 'Meeting has been deleted.',
                                 timer: 1500,
                                 showConfirmButton: false
                             }).then(() => location.reload());
@@ -251,7 +278,7 @@
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Failed!',
-                                text: 'Failed to delete course.',
+                                text: 'Failed to delete meeting.',
                             });
                         }
                     });
